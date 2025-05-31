@@ -1,0 +1,64 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Servo.h>
+
+// Inisialisasi LCD (alamat 0x27, ukuran 16x2)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Inisialisasi objek servo
+Servo jemuranServo;
+
+// Pin
+const int potPin = A0;     // Potensiometer sebagai sensor hujan (simulasi)
+const int ldrPin = A1;     // Sensor LDR
+const int servoPin = 9;    // Pin PWM untuk servo
+
+// Threshold
+const int rainThreshold = 500;  // nilai ambang potensiometer untuk hujan
+const int ldrThreshold = 400;   // nilai ambang LDR untuk gelap/mendung
+
+void setup() {
+  // Setup LCD
+  lcd.init();
+  lcd.backlight();
+
+  // Setup servo
+  jemuranServo.attach(servoPin);
+
+  // Setup awal LCD
+  lcd.setCursor(0, 0);
+  lcd.print("Cuaca: Mengecek");
+}
+
+void loop() {
+  int nilaiPot = analogRead(potPin);
+  int nilaiLDR = analogRead(ldrPin);
+
+  lcd.clear();  // Hapus layar setiap loop
+  lcd.setCursor(0, 0);
+  lcd.print("Cuaca: ");
+
+  // Cek kondisi hujan
+  bool isRaining = (nilaiPot < rainThreshold);
+  // Cek kondisi gelap
+  bool isDark = (nilaiLDR < ldrThreshold);
+
+  if (isRaining) {
+    jemuranServo.write(90);  // Tutup jemuran
+    lcd.print("Hujan");
+    lcd.setCursor(0, 1);
+    lcd.print("Jemuran Tertutup");
+  } else if (isDark) {
+    jemuranServo.write(90);  // Tutup jemuran
+    lcd.print("Mendung/Gelap");
+    lcd.setCursor(0, 1);
+    lcd.print("Jemuran Tertutup");
+  } else {
+    jemuranServo.write(0);   // Buka jemuran
+    lcd.print("Cerah");
+    lcd.setCursor(0, 1);
+    lcd.print("Jemuran Terbuka ");
+  }
+
+  delay(1000);
+}
