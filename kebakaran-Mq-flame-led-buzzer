@@ -1,0 +1,61 @@
+#define BLYNK_TEMPLATE_ID "YourTemplateID"
+#define BLYNK_DEVICE_NAME "YourDeviceName"
+#define BLYNK_AUTH_TOKEN "YourAuthToken"
+
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+
+char ssid[] = "YourWiFiSSID";
+char pass[] = "YourWiFiPassword";
+
+// Pin setup
+#define FLAME_PIN D1        // Flame sensor (digital)
+#define MQ_PIN A0           // MQ2 sensor (analog)
+#define BUZZER_PIN D2       // Buzzer pin
+#define LED_PIN D3          // LED indikator
+
+BlynkTimer timer;
+
+void sendSensorData() {
+  int gasValue = analogRead(MQ_PIN);
+  int flame = digitalRead(FLAME_PIN);  // 0 = api terdeteksi
+
+  // Kirim nilai gas ke Blynk (V1)
+  Blynk.virtualWrite(V1, gasValue);
+
+  if (flame == 0 && gasValue > 300) {
+    // Api & gas terdeteksi
+    Blynk.virtualWrite(V2, "Api & Gas Terdeteksi!");
+    Blynk.virtualWrite(V3, 255); // LED Widget ON
+    Blynk.logEvent("api_terdeteksi", "Flame dan gas terdeteksi!");
+
+    tone(BUZZER_PIN, 1000);        // Buzzer nyala frekuensi 1kHz
+    digitalWrite(LED_PIN, HIGH);  // LED nyala
+  } else {
+    // Aman
+    Blynk.virtualWrite(V2, "Aman");
+    Blynk.virtualWrite(V3, 0);    // LED Widget OFF
+
+    noTone(BUZZER_PIN);           // Buzzer mati
+    digitalWrite(LED_PIN, LOW);   // LED mati
+  }
+}
+
+void setup() {
+  pinMode(FLAME_PIN, INPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
+
+  digitalWrite(LED_PIN, LOW);
+  noTone(BUZZER_PIN);
+
+  Serial.begin(9600);
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+
+  timer.setInterval(2000L, sendSensorData); // tiap 2 detik
+}
+
+void loop() {
+  Blynk.run();
+  timer.run();
+}
