@@ -1,0 +1,51 @@
+JEMURAN OTOMATIS IOT
+
+#define BLYNK_PRINT Serial
+
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+#include <Servo.h>
+
+// Ganti dengan data Blynk kamu
+char auth[] = "ISI_AUTH_TOKEN_BLYNK";
+char ssid[] = "NAMA_WIFI_KAMU";
+char pass[] = "PASSWORD_WIFI_KAMU";
+
+// Pin setup
+#define PIN_RAIN D5       // Sensor hujan digital (DO)
+#define PIN_SERVO D2      // Servo motor
+#define LDR_PIN A0        // Sensor LDR (analog)
+
+// Servo object
+Servo jemuran;
+
+void setup() {
+  Serial.begin(9600);
+  Blynk.begin(auth, ssid, pass);
+
+  pinMode(PIN_RAIN, INPUT);
+  jemuran.attach(PIN_SERVO);
+}
+
+void loop() {
+  Blynk.run();
+
+  int hujan = digitalRead(PIN_RAIN);  // LOW saat hujan
+  int cahaya = analogRead(LDR_PIN);   // 0–1023, semakin terang semakin besar
+
+  if (hujan == LOW) {
+    // Hujan terdeteksi
+    jemuran.write(0); // Tutup jemuran
+    Blynk.virtualWrite(V0, "Hujan - Jemuran Tertutup");
+  } else if (cahaya < 400) {
+    // Mendung atau malam
+    jemuran.write(0); // Tetap tutup
+    Blynk.virtualWrite(V0, "Mendung - Jemuran Tertutup");
+  } else {
+    // Cuaca cerah
+    jemuran.write(90); // Buka jemuran
+    Blynk.virtualWrite(V0, "Cerah - Jemuran Terbuka");
+  }
+
+  delay(1000); // Update setiap detik
+}
