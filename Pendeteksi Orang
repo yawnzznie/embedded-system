@@ -1,0 +1,76 @@
+Pendeteksi Orang
+
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// Inisialisasi LCD I2C (alamat umum 0x27, ukuran 16x2)
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Pin setup
+const int LDRPin = A0;        // LDR sensor analog pin
+const int trigPin = 9;        // Ultrasonic trigger
+const int echoPin = 10;       // Ultrasonic echo
+const int ledPin = 13;        // LED indicator
+const int buzzerPin = 8;      // Buzzer
+
+// Thresholds
+const int LDRThreshold = 300;      // Sesuaikan berdasarkan kondisi cahaya
+const int distanceThreshold = 50;  // Jarak maksimum (cm) untuk deteksi gerakan
+
+void setup() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(ledPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+
+  Serial.begin(9600);
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Sistem Siap...");
+  delay(1000);
+  lcd.clear();
+}
+
+long readUltrasonicDistance() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  
+  long duration = pulseIn(echoPin, HIGH);
+  long distance = duration * 0.034 / 2; // cm
+  return distance;
+}
+
+void loop() {
+  int ldrValue = analogRead(LDRPin);
+  long distance = readUltrasonicDistance();
+
+  Serial.print("LDR: ");
+  Serial.print(ldrValue);
+  Serial.print(" | Distance: ");
+  Serial.println(distance);
+
+  if (ldrValue < LDRThreshold && distance > 0 && distance <= distanceThreshold) {
+    digitalWrite(ledPin, HIGH);
+    tone(buzzerPin, 1000); // bunyikan buzzer dengan frekuensi 1000 Hz
+
+    lcd.setCursor(0, 0);
+    lcd.print("ALERT: Gerakan!  ");
+    lcd.setCursor(0, 1);
+    lcd.print("LED:ON BUZZER:ON");
+  } else {
+    digitalWrite(ledPin, LOW);
+    noTone(buzzerPin); // matikan buzzer
+
+    lcd.setCursor(0, 0);
+    lcd.print("Status: Aman     ");
+    lcd.setCursor(0, 1);
+    lcd.print("LED:OFF BZR:OFF ");
+  }
+
+  delay(300);
+}
