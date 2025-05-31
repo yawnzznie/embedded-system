@@ -1,0 +1,53 @@
+#define BLYNK_TEMPLATE_ID "YourTemplateID"
+#define BLYNK_DEVICE_NAME "YourDeviceName"
+#define BLYNK_AUTH_TOKEN "YourAuthToken"
+
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+
+// Ganti dengan WiFi kamu
+char ssid[] = "YourWiFiSSID";
+char pass[] = "YourWiFiPassword";
+
+// Pin
+#define FLAME_PIN D1
+#define BUZZER_PIN D2
+#define MQ_PIN A0
+
+BlynkTimer timer;
+
+void sendSensorData() {
+  int gasValue = analogRead(MQ_PIN);
+  int flame = digitalRead(FLAME_PIN);  // 0 = api terdeteksi
+
+  Blynk.virtualWrite(V1, gasValue);
+
+  if (flame == 0) {
+    Blynk.virtualWrite(V2, "Api Terdeteksi!");
+    Blynk.virtualWrite(V3, 255);
+    Blynk.logEvent("api_terdeteksi", "Ada api terdeteksi oleh sensor!");
+
+    tone(BUZZER_PIN, 1000);  // Buzzer bunyi frekuensi 1000 Hz
+  } else {
+    Blynk.virtualWrite(V2, "Aman");
+    Blynk.virtualWrite(V3, 0);
+
+    noTone(BUZZER_PIN);  // Buzzer mati
+  }
+}
+
+void setup() {
+  pinMode(FLAME_PIN, INPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  noTone(BUZZER_PIN);  // Pastikan buzzer mati saat awal
+
+  Serial.begin(9600);
+
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  timer.setInterval(2000L, sendSensorData);
+}
+
+void loop() {
+  Blynk.run();
+  timer.run();
+}
